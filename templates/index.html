@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexAnalytica | Legal Document Analysis</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <!-- Background cleaner and more professional now -->
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <span class="nav-title">Lex<span class="highlight">Analytica</span></span>
+        </div>
+        <div class="nav-subtitle">Advanced Document Intelligence</div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="hero-badge">Enterprise Legal Technology</div>
+            <h1 class="hero-title">
+                Analyze Legal Documents
+                <span class="gradient-text">with Precision</span>
+            </h1>
+            <p class="hero-desc">
+                Automated summarization and entity extraction for legal professionals. 
+                Process court judgments, contracts, and filings with institutional-grade 
+                NLP technology.
+            </p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-value">PDF</span>
+                    <span class="stat-label">Analysis</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">DOCX</span>
+                    <span class="stat-label">Synthesis</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">NLP</span>
+                    <span class="stat-label">Extraction</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="upload-section" id="upload-section">
+            <div class="section-header">
+                <h2 class="section-title">Document Analysis</h2>
+                <p class="section-desc" id="results-desc">Select a document to begin processing.</p>
+            </div>
+
+            <form id="upload-form">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <h3 class="dropzone-text">Click to upload or drag & drop</h3>
+                    <p class="dropzone-subtext">Supports PDF, DOCX, and TXT files (Max 16MB)</p>
+                    <input type="file" id="file-input" hidden accept=".pdf,.docx,.txt">
+                </div>
+
+                <div id="file-info" style="display: none;">
+                    <div class="file-info-card" style="display: flex; align-items: center; gap: 14px; padding: 14px 20px; margin-top: 16px; background: var(--bg-card); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md);">
+                        <div class="file-icon">📄</div>
+                        <div class="file-details" style="flex: 1;">
+                            <span class="file-name" id="file-name" style="font-size: 0.95rem; font-weight: 600; color: var(--accent-success);">filename.pdf</span>
+                            <span class="file-size" id="file-size" style="font-size: 0.8rem; color: var(--text-muted); display: block;">1.2 MB</span>
+                        </div>
+                        <button type="button" class="file-remove" id="file-remove" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">✕</button>
+                    </div>
+                </div>
+
+                <div class="mode-selector">
+                    <span class="mode-label">Analysis Mode</span>
+                    <div class="mode-options">
+                        <label class="mode-option">
+                            <input type="radio" name="mode" value="both" checked>
+                            <span class="mode-btn">
+                                <span class="mode-icon">📜</span>
+                                <span class="mode-name">Full Analysis</span>
+                                <span class="mode-desc">Extractive + Abstractive</span>
+                            </span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="mode" value="extractive">
+                            <span class="mode-btn">
+                                <span class="mode-icon">🔍</span>
+                                <span class="mode-name">Extractive</span>
+                                <span class="mode-desc">Direct Evidence Extraction</span>
+                            </span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="mode" value="abstractive">
+                            <span class="mode-btn">
+                                <span class="mode-icon">📑</span>
+                                <span class="mode-name">Synthesis</span>
+                                <span class="mode-desc">Document Synthesis</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn" disabled>
+                    <span>Process Document</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Loading Section -->
+        <section class="loading-section" id="loading-section" style="display: none;">
+            <div class="loader-container">
+                <div class="loader-ring"></div>
+                <div class="loader-text">
+                    <h3>Analyzing Document</h3>
+                    <p id="loading-status">Parsing document structure...</p>
+                </div>
+            </div>
+            <div class="loading-steps">
+                <div class="step" id="step-extract">
+                    <div class="step-dot"></div>
+                    <span>Text Extraction</span>
+                </div>
+                <div class="step" id="step-entity">
+                    <div class="step-dot"></div>
+                    <span>Intel Extraction</span>
+                </div>
+                <div class="step" id="step-summarize">
+                    <div class="step-dot"></div>
+                    <span>Synthesis</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="results-section" style="display: none;">
+            <div class="section-header">
+                <h2 class="section-title">Analysis Results</h2>
+                <p class="section-desc">Extracted insights and document synthesis.</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-card-icon">📊</span>
+                    <span class="stat-card-value" id="stat-words">0</span>
+                    <span class="stat-card-label">Words</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card-icon">📑</span>
+                    <span class="stat-card-value" id="stat-sentences">0</span>
+                    <span class="stat-card-label">Sentences</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card-icon">⏳</span>
+                    <span class="stat-card-value" id="stat-chars">0</span>
+                    <span class="stat-card-label">Characters</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card-icon">🛡️</span>
+                    <span class="stat-card-value" id="stat-entities">0</span>
+                    <span class="stat-card-label">Entities</span>
+                </div>
+            </div>
+
+            <div class="result-panel" id="entity-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        Identified Entities
+                    </h3>
+                </div>
+                <div class="panel-content" id="entities-content">
+                    <!-- Entities will be injected here -->
+                </div>
+            </div>
+
+            <div class="result-panel" id="extractive-panel" style="display: none;">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        Summary
+                    </h3>
+                    <span class="panel-badge">Analysis</span>
+                </div>
+                <div class="panel-content">
+                    <p class="summary-text" id="extractive-text"></p>
+                </div>
+            </div>
+
+            <div class="result-panel" id="abstractive-panel" style="display: none;">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        Abstractive Summary
+                    </h3>
+                    <span class="panel-badge ai-badge">AI Generated</span>
+                </div>
+                <div class="panel-content">
+                    <p class="summary-text" id="abstractive-text"></p>
+                </div>
+            </div>
+
+            <!-- Original Text Preview -->
+            <div class="result-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        Original Text Preview
+                    </h3>
+                    <button type="button" class="panel-toggle" data-target="original-content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="panel-content collapsed" id="original-content">
+                    <p class="original-text" id="original-text"></p>
+                </div>
+            </div>
+
+            <!-- New Analysis Button -->
+            <button class="new-analysis-btn" id="new-analysis-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Analyze Another Document
+            </button>
+        </section>
+
+        <!-- Error Section -->
+        <section class="error-section" id="error-section" style="display: none;">
+            <div class="error-card">
+                <div class="error-icon">⚠️</div>
+                <h3 class="error-title">Processing Error</h3>
+                <p class="error-message" id="error-message"></p>
+                <button class="new-analysis-btn" id="error-retry-btn">Try Again</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>LexAnalytica Institutional Document Analytics</p>
+        <p class="footer-tech">Engineered for Legal Accuracy • Powered by NLP Intelligence</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
