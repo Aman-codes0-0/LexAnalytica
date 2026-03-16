@@ -90,7 +90,7 @@ def split_sentences(text: str, lang: str = "en") -> list:
         sentences = sent_tokenize(text)
     
     # Clean up each sentence
-    cleaned = [s.strip() for s in sentences if len(s.strip()) > 10]
+    cleaned = [s.strip() for s in sentences if len(s.strip()) > 0]
     return cleaned
 
 

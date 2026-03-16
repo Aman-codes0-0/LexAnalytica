@@ -86,6 +86,10 @@ def abstractive_summary(text: str, max_length: int = 150, min_length: int = 30, 
     if lang != "en":
         return extractive_summary(text, num_sentences=6, lang=lang)
 
+    # Safeguard for extremely short text to prevent model hallucination
+    if len(text.strip()) < 50:
+        return extractive_summary(text, num_sentences=3, lang=lang)
+
     _load_abstractive_model()
     
     # Truncate input to model's max length (1024 tokens)
