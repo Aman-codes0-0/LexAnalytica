@@ -67,22 +67,67 @@ LexAnalytica is a modern, professional legal document analysis platform. It leve
 
 ### 🚀 Setup Instructions
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt --break-system-packages
-   ```
+#### 1. Create a Virtual Environment (Recommended)
+Developing in a virtual environment keeps your system clean.
+```bash
+# Create the environment
+python3 -m venv venv
 
-2. **Download NLP Models**:
-   ```bash
-   python3 -m spacy download en_core_web_sm
-   # Models download automatically on first run via Transformers
-   ```
+# Activate it
+source venv/bin/activate  # On Linux/macOS
+# venv\Scripts\activate  # On Windows
+```
 
-3. **Run the Application**:
-   ```bash
-   python3 app.py
+#### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+#### 3. Download NLP Models
+```bash
+python3 -m spacy download en_core_web_sm
+# Hindi and Summarization models download automatically on first run
+```
+
+#### 4. Run the Application
+```bash
+python3 app.py
+```
+Open `http://localhost:5000` in your browser.
+
+---
+
+### 🌐 Free Deployment Guide (Hugging Face Spaces)
+
+Since this project uses heavy AI models (Transformers/PyTorch), standard free hosts like Render or Vercel may run out of memory. **Hugging Face Spaces** is the best free option.
+
+#### Step-by-Step Process:
+1. **Create an Account**: Sign up at [huggingface.co](https://huggingface.co/).
+2. **Create a New Space**:
+   - Click "New" -> "Space".
+   - Give it a name (e.g., `lex-analytica`).
+   - Select **Docker** as the SDK.
+   - Select **Blank** template.
+   - Choose the "Free" tier (CPU is enough).
+3. **Upload Files**:
+   - Upload all project files (`app.py`, `nlp/`, `static/`, `templates/`, `requirements.txt`).
+4. **Create a Dockerfile**:
+   Hugging Face Docker Spaces need a `Dockerfile`. Create a file named `Dockerfile` in the root with this content:
+   ```dockerfile
+   FROM python:3.10
+   WORKDIR /code
+   COPY ./requirements.txt /code/requirements.txt
+   RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+   RUN python -m spacy download en_core_web_sm
+   COPY . .
+   CMD ["python", "app.py"]
    ```
-   Open `http://localhost:5000` in your browser.
+5. **Set Environment Variable**:
+   In `app.py`, ensure the host is set to `0.0.0.0` and port is `7860` (Hugging Face's default).
+   ```python
+   app.run(host="0.0.0.0", port=7860)
+   ```
+6. **Deploy**: Once you commit the files, Hugging Face will automatically build and start your "Legal Assistant" online!
 
 ---
 
