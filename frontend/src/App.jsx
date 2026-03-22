@@ -47,11 +47,11 @@ export default function App() {
   };
 
   const validateAndSetFile = (file) => {
-    const validTypes = ['.pdf', '.docx', '.txt'];
+    const validTypes = ['.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
     const ext = '.' + file.name.split('.').pop().toLowerCase();
 
     if (!validTypes.includes(ext)) {
-      alert('Unsupported file type. Please upload PDF, DOCX, or TXT files.');
+      alert('Unsupported file type. Please upload PDF, DOCX, TXT, or Image (PNG/JPG) files.');
       return;
     }
 
@@ -226,12 +226,12 @@ export default function App() {
                 >
                   <Upload className="dropzone-icon" size={48} />
                   <h3 className="dropzone-text">Click to upload or drag & drop</h3>
-                  <p className="dropzone-subtext">Supports PDF, DOCX, and TXT files (Max 16MB)</p>
+                  <p className="dropzone-subtext">Supports PDF, DOCX, TXT, and Images (Max 16MB)</p>
                   <input 
                     type="file" 
                     id="file-input" 
                     hidden 
-                    accept=".pdf,.docx,.txt"
+                    accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
                     onChange={handleFileChange}
                   />
                 </div>

@@ -1,6 +1,6 @@
 """
 Text extraction module for legal documents.
-Supports PDF, DOCX, and TXT file formats.
+Supports PDF, DOCX, TXT, and Image (PNG, JPG, JPEG) file formats.
 """
 
 import os
@@ -29,8 +29,10 @@ def extract_text(file_path: str) -> str:
         return _extract_from_docx(file_path)
     elif ext == ".txt":
         return _extract_from_txt(file_path)
+    elif ext in (".png", ".jpg", ".jpeg"):
+        return _extract_from_image(file_path)
     else:
-        raise ValueError(f"Unsupported file format: {ext}. Supported formats: PDF, DOCX, TXT")
+        raise ValueError(f"Unsupported file format: {ext}. Supported formats: PDF, DOCX, TXT, PNG, JPG, JPEG")
 
 
 def _extract_from_pdf(file_path: str) -> str:
@@ -55,3 +57,18 @@ def _extract_from_txt(file_path: str) -> str:
     """Extract text from a plain text file."""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read().strip()
+
+
+def _extract_from_image(file_path: str) -> str:
+    """Extract text from an image file using PaddleOCR."""
+    from paddleocr import PaddleOCR
+    ocr = PaddleOCR(use_angle_cls=True, lang='en')
+    result = ocr.ocr(file_path)
+    lines = []
+    for block in result:
+        if block:
+            for line in block:
+                text = line[1][0]
+                if text.strip():
+                    lines.append(text.strip())
+    return "\n".join(lines)

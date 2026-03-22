@@ -2,7 +2,7 @@
 
 > **Institutional-grade AI platform for legal document summarization, entity extraction, and bi-lingual analysis.**
 
-LexAnalytica is a full-stack web application that combines a **FastAPI** backend with a **React + Vite** frontend to help legal professionals analyze documents in seconds. Upload a PDF, DOCX, or TXT file and get a professional AI-generated report with key findings, entity extraction, and downloadable PDF/DOCX output — with full **English & Hindi (Devanagari)** support.
+LexAnalytica is a full-stack web application that combines a **FastAPI** backend with a **React + Vite** frontend to help legal professionals analyze documents in seconds. Upload a PDF, DOCX, TXT, or **scanned image (PNG/JPG)** and get a professional AI-generated report with key findings, entity extraction, and downloadable PDF/DOCX output — with full **English & Hindi (Devanagari)** support.
 
 ---
 
@@ -13,6 +13,7 @@ LexAnalytica is a full-stack web application that combines a **FastAPI** backend
 | 🧠 **Neural Summarization** | Extractive (key findings) + Abstractive (AI synthesis) using BART transformer |
 | 🏷️ **Legal NER** | Extracts Judges, Case Numbers, Sections of Law, Parties, Dates, Organizations |
 | 🌐 **Bi-lingual Support** | Native Hindi (Devanagari) & English document processing + cross-language translation |
+| 🖼️ **OCR Support** | Scanned image files (PNG, JPG, JPEG) processed via PaddleOCR |
 | 📄 **PDF Export** | Professional Unicode PDF reports with full Devanagari rendering |
 | 📝 **DOCX Export** | Editable Word documents for legal drafting |
 | ⚡ **Async API** | FastAPI + Uvicorn for high-performance, non-blocking processing |
@@ -31,7 +32,7 @@ LexAnalytica/
 │
 ├── nlp/                    # Modular NLP intelligence layer
 │   ├── __init__.py
-│   ├── extractor.py        # PDF/DOCX/TXT text extraction
+│   ├── extractor.py        # PDF/DOCX/TXT/Image (OCR) text extraction
 │   ├── preprocessor.py     # Text cleaning, sentence splitting, language detection
 │   ├── entities.py         # Legal Named Entity Recognition (SpaCy)
 │   ├── summarizer.py       # BART-based summarization (extractive + abstractive)
@@ -45,7 +46,7 @@ LexAnalytica/
         └── main.jsx        # Main React application
 ```
 
-**Backend:** FastAPI · Uvicorn · SpaCy (NER) · BART/Transformers (Summarization) · LangDetect · Deep-Translator · ReportLab · Python-Docx
+**Backend:** FastAPI · Uvicorn · SpaCy (NER) · BART/Transformers (Summarization) · LangDetect · Deep-Translator · ReportLab · Python-Docx · **PaddleOCR** (Image OCR)
 
 **Frontend:** React 18 · Vite 5 · Lucide Icons · Dark Theme
 
@@ -175,7 +176,7 @@ Go to: [http://localhost:8000](http://localhost:8000)
 
 | Parameter | Type | Values | Description |
 |---|---|---|---|
-| `file` | File | `.pdf`, `.docx`, `.txt` | Document to analyze |
+| `file` | File | `.pdf`, `.docx`, `.txt`, `.png`, `.jpg`, `.jpeg` | Document to analyze |
 | `mode` | String | `extractive`, `abstractive`, `both` | Summary type |
 | `output_lang` | String | `en`, `hi` | Output language |
 
@@ -198,6 +199,9 @@ Go to: [http://localhost:8000](http://localhost:8000)
 **Port 8000 already in use**
 → Kill the existing process or change the port in `app.py` (line: `uvicorn.run(app, host="0.0.0.0", port=8000)`).
 
+**OCR output is empty or garbled**
+→ Make sure the image is clear and well-lit. PaddleOCR works best with high-resolution scans (150 DPI or higher).
+
 ---
 
 ## 🗂️ Supported File Formats
@@ -207,6 +211,8 @@ Go to: [http://localhost:8000](http://localhost:8000)
 | PDF | `.pdf` | Scanned + digital PDFs |
 | Word Document | `.docx` | Microsoft Word format |
 | Plain Text | `.txt` | UTF-8 encoded text |
+| PNG Image | `.png` | Scanned documents via OCR |
+| JPEG Image | `.jpg`, `.jpeg` | Scanned documents via OCR |
 
 ---
 
