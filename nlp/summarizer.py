@@ -4,6 +4,8 @@ Supports both extractive (TF-IDF sentence ranking) and abstractive (BART) summar
 """
 
 import math
+import torch
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from .preprocessor import split_sentences, get_word_frequencies
 
 
@@ -68,44 +70,50 @@ def _load_abstractive_model():
     if _abstractive_model is not None:
         return
     
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-    
-    model_name = "sshleifer/distilbart-cnn-6-6"
-    print(f"[INFO] Loading lightweight summarization model: {model_name} ...")
+    model_name = "nsi319/legal-led-base-16384"
+    print(f"[INFO] Loading specialized legal summarization model: {model_name} ...")
     _abstractive_tokenizer = AutoTokenizer.from_pretrained(model_name)
     _abstractive_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-    print("[INFO] Model loaded successfully.")
+    print("[INFO] Legal model loaded successfully.")
 
 
-def abstractive_summary(text: str, max_length: int = 150, min_length: int = 30, lang: str = "en") -> str:
+def abstractive_summary(text: str, max_length: int = 250, min_length: int = 50, lang: str = "en") -> str:
     """
-    Generate an abstractive summary. 
-    Note: Current model is English focus. For Hindi, we fall back to high-quality extractive 
-    to avoid garbled text.
+    Generate an abstractive summary using Legal-LED.
+    LED is optimized for long legal documents (up to 16,384 tokens).
     """
     if lang != "en":
         return extractive_summary(text, num_sentences=6, lang=lang)
 
-    # Safeguard for extremely short text to prevent model hallucination
+    # Safeguard for extremely short text
     if len(text.strip()) < 50:
         return extractive_summary(text, num_sentences=3, lang=lang)
 
     _load_abstractive_model()
     
-    # Truncate input to model's max length (1024 tokens)
+    # LED supports up to 16,384 tokens
     inputs = _abstractive_tokenizer(
         text,
         return_tensors="pt",
-        max_length=1024,
+        max_length=16384,
         truncation=True
     )
     
-    # Generate summary with optimized CPU params
+    input_ids = inputs["input_ids"]
+    attention_mask = inputs["attention_mask"]
+    
+    # For LED, we specify global attention on the first token (BOS)
+    global_attention_mask = torch.zeros_like(attention_mask)
+    global_attention_mask[:, 0] = 1
+    
+    # Generate summary with specialized legal model parameters
     summary_ids = _abstractive_model.generate(
-        inputs["input_ids"],
+        input_ids,
+        attention_mask=attention_mask,
+        global_attention_mask=global_attention_mask,
         max_length=max_length,
         min_length=min_length,
-        num_beams=2,
+        num_beams=4,
         length_penalty=2.0,
         early_stopping=True,
         no_repeat_ngram_size=3

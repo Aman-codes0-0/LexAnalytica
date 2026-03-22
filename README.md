@@ -2,7 +2,7 @@
 
 > **Institutional-grade AI platform for legal document summarization, entity extraction, and bi-lingual analysis.**
 
-LexAnalytica is a full-stack web application that combines a **FastAPI** backend with a **React + Vite** frontend to help legal professionals analyze documents in seconds. Upload a PDF, DOCX, TXT, or **scanned image (PNG/JPG)** and get a professional AI-generated report with key findings, entity extraction, and downloadable PDF/DOCX output — with full **English & Hindi (Devanagari)** support.
+LexAnalytica is a full-stack web application that combines a **FastAPI** backend with a **React + Vite** frontend to help legal professionals analyze documents in seconds. Upload a PDF, DOCX, TXT, or **scanned image (PNG/JPG)** and get a professional AI-generated report with key findings, entity extraction, and downloadable PDF output — with full **English & Hindi (Devanagari)** support.
 
 ---
 
@@ -10,12 +10,11 @@ LexAnalytica is a full-stack web application that combines a **FastAPI** backend
 
 | Feature | Description |
 |---|---|
-| 🧠 **Neural Summarization** | Extractive (key findings) + Abstractive (AI synthesis) using BART transformer |
+| 🧠 **Neural Summarization** | Specialized **Legal-LED-16384** model (16k context) for high-accuracy AI synthesis |
 | 🏷️ **Legal NER** | Extracts Judges, Case Numbers, Sections of Law, Parties, Dates, Organizations |
 | 🌐 **Bi-lingual Support** | Native Hindi (Devanagari) & English document processing + cross-language translation |
 | 🖼️ **OCR Support** | Scanned image files (PNG, JPG, JPEG) processed via PaddleOCR |
 | 📄 **PDF Export** | Professional Unicode PDF reports with full Devanagari rendering |
-| 📝 **DOCX Export** | Editable Word documents for legal drafting |
 | ⚡ **Async API** | FastAPI + Uvicorn for high-performance, non-blocking processing |
 | 🌙 **Dark UI** | Premium dark-themed React dashboard with real-time feedback |
 
@@ -35,8 +34,8 @@ LexAnalytica/
 │   ├── extractor.py        # PDF/DOCX/TXT/Image (OCR) text extraction
 │   ├── preprocessor.py     # Text cleaning, sentence splitting, language detection
 │   ├── entities.py         # Legal Named Entity Recognition (SpaCy)
-│   ├── summarizer.py       # BART-based summarization (extractive + abstractive)
-│   └── generator.py        # PDF (ReportLab) & DOCX (python-docx) report generation
+│   ├── summarizer.py       # Legal-LED-16384 summarization (extractive + abstractive)
+│   └── generator.py        # PDF (ReportLab) report generation
 │
 └── frontend/               # React + Vite UI
     ├── index.html
@@ -46,7 +45,7 @@ LexAnalytica/
         └── main.jsx        # Main React application
 ```
 
-**Backend:** FastAPI · Uvicorn · SpaCy (NER) · BART/Transformers (Summarization) · LangDetect · Deep-Translator · ReportLab · Python-Docx · **PaddleOCR** (Image OCR)
+**Backend:** FastAPI · Uvicorn · SpaCy (NER) · Legal-LED (Summarization) · LangDetect · Deep-Translator · ReportLab · **PaddleOCR** (Image OCR)
 
 **Frontend:** React 18 · Vite 5 · Lucide Icons · Dark Theme
 
@@ -86,7 +85,7 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-> ⚠️ This step downloads AI models (BART, SpaCy). It may take **5–10 minutes** on the first run.
+> ⚠️ This step downloads large AI models (**Legal-LED**, SpaCy). It may take **5–15 minutes** on the first run.
 
 **Step 4 — Download the SpaCy English language model**
 ```bash
@@ -138,7 +137,7 @@ venv\Scripts\activate
 ```cmd
 pip install -r requirements.txt
 ```
-> ⚠️ This step downloads AI models (BART, SpaCy). It may take **5–10 minutes** on the first run.
+> ⚠️ This step downloads large AI models (**Legal-LED**, SpaCy). It may take **5–15 minutes** on the first run.
 
 **Step 4 — Download the SpaCy English language model**
 ```cmd
@@ -170,7 +169,6 @@ Go to: [http://localhost:8000](http://localhost:8000)
 |---|---|---|
 | `POST` | `/api/summarize` | Upload a document for full analysis |
 | `POST` | `/api/download/pdf` | Download analysis as PDF |
-| `POST` | `/api/download/docx` | Download analysis as DOCX |
 
 ### `/api/summarize` — Form Parameters
 
@@ -209,7 +207,6 @@ Go to: [http://localhost:8000](http://localhost:8000)
 | Format | Extension | Notes |
 |---|---|---|
 | PDF | `.pdf` | Scanned + digital PDFs |
-| Word Document | `.docx` | Microsoft Word format |
 | Plain Text | `.txt` | UTF-8 encoded text |
 | PNG Image | `.png` | Scanned documents via OCR |
 | JPEG Image | `.jpg`, `.jpeg` | Scanned documents via OCR |

@@ -3,6 +3,7 @@ Module for generating PDF and DOCX versions of legal analysis results.
 """
 
 import io
+import os
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -10,22 +11,35 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from docx import Document
-from docx.shared import Inches, Pt
 
-# Font registration
-FONT_PATH = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
-FONT_NAME = "NotoSans"
+# ─── Font Registration (Unicode Support for Hindi) ──────────────────────────────
 
-try:
-    if os.path.exists(FONT_PATH):
-        pdfmetrics.registerFont(TTFont(FONT_NAME, FONT_PATH))
-    else:
-        print(f"[WARNING] Devanagari font not found at {FONT_PATH}. Falling back to standard fonts.")
-        FONT_NAME = "Helvetica"
-except Exception as e:
-    print(f"[ERROR] Font registration failed: {e}")
-    FONT_NAME = "Helvetica"
+def _register_unicode_fonts():
+    """
+    Search for and register Unicode fonts that support Devanagari script.
+    Checks common Linux paths for Noto Sans, Lohit, or FreeSerif.
+    """
+    possible_fonts = [
+        ("/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf", "NotoSans"),
+        ("/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Regular.ttf", "NotoSerif"),
+        ("/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf", "Lohit"),
+        ("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", "FreeSerif"),
+        # Fallbacks for other distributions
+        ("/usr/share/fonts/noto/NotoSansDevanagari-Regular.ttf", "NotoSans"),
+    ]
+    
+    for path, name in possible_fonts:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont(name, path))
+                print(f"[INFO] Registered Unicode font: {name} from {path}")
+                return name
+            except Exception as e:
+                print(f"[WARNING] Failed to register font {name}: {e}")
+    
+    return "Helvetica" # Absolute fallback
+
+FONT_NAME = _register_unicode_fonts()
 
 def generate_pdf(data: dict) -> io.BytesIO:
     """Generate a professional PDF report from analysis results."""
@@ -37,20 +51,25 @@ def generate_pdf(data: dict) -> io.BytesIO:
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
     
     styles = getSampleStyleSheet()
-    # Custom styles
+    # Adjust leading and spacing for Hindi (Devanagari matras need more height)
+    base_leading = 14 if lang == "en" else 18
+    base_fontSize = 10 if lang == "en" else 11
+
     title_style = ParagraphStyle(
         'TitleStyle',
         parent=styles['Heading1'],
-        fontName=active_font, # Use registered font
+        fontName=active_font,
         fontSize=22,
+        leading=28,
         spaceAfter=12,
         textColor=colors.HexColor("#6366f1")
     )
     section_style = ParagraphStyle(
         'SectionStyle',
         parent=styles['Heading2'],
-        fontName=active_font, # Use registered font
+        fontName=active_font,
         fontSize=14,
+        leading=18,
         spaceBefore=12,
         spaceAfter=6,
         textColor=colors.HexColor("#1e293b")
@@ -58,9 +77,9 @@ def generate_pdf(data: dict) -> io.BytesIO:
     body_style = ParagraphStyle(
         'BodyStyle',
         parent=styles['Normal'],
-        fontName=active_font, # Use registered font
-        fontSize=10,
-        leading=14
+        fontName=active_font,
+        fontSize=base_fontSize,
+        leading=base_leading
     )
     
     elements = []
@@ -134,69 +153,5 @@ def generate_pdf(data: dict) -> io.BytesIO:
     elements.append(t_metrics)
     
     doc.build(elements)
-    buffer.seek(0)
-    return buffer
-
-def generate_docx(data: dict) -> io.BytesIO:
-    """Generate a formatted Word document from analysis results."""
-    doc = Document()
-    
-    # Title
-    title = doc.add_heading('LexAnalytica Analysis Report', 0)
-    
-    # Metadata
-    p = doc.add_paragraph()
-    p.add_run(f"Document: {data.get('filename', 'Unknown')}\n").bold = True
-    p.add_run(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-    p.add_run(f"Output Language: {data.get('output_language', 'English')}")
-    
-    # Executive Summary
-    summary = data.get("summary", {})
-    if summary.get("extractive") or summary.get("abstractive"):
-        doc.add_heading('Executive Summary', level=1)
-        if summary.get("abstractive"):
-            doc.add_heading('AI Synthesis', level=2)
-            doc.add_paragraph(summary["abstractive"])
-        if summary.get("extractive"):
-            doc.add_heading('Key Findings (Extractive)', level=2)
-            doc.add_paragraph(summary["extractive"])
-            
-    # Entities
-    entities = data.get("entities", {})
-    if any(entities.values()):
-        doc.add_heading('Identified Legal Entities', level=1)
-        table = doc.add_table(rows=1, cols=2)
-        table.style = 'Light List Accent 1'
-        hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Type'
-        hdr_cells[1].text = 'Extraction'
-        
-        for key, label in [
-            ("persons", "Persons"),
-            ("organizations", "Organizations"),
-            ("dates", "Dates"),
-            ("locations", "Locations"),
-            ("case_numbers", "Case Numbers"),
-            ("law_sections", "Law Sections")
-        ]:
-            items = entities.get(key, [])
-            if items:
-                row_cells = table.add_row().cells
-                row_cells[0].text = label
-                row_cells[1].text = ", ".join(items)
-                
-    # Metrics
-    doc.add_heading('Document Metrics', level=1)
-    doc.add_paragraph(f"Word Count: {data.get('word_count', 0)}")
-    doc.add_paragraph(f"Sentence Count: {data.get('sentence_count', 0)}")
-    doc.add_paragraph(f"Character Length: {data.get('text_length', 0)}")
-    
-    # Add footer
-    section = doc.sections[0]
-    footer = section.footer
-    footer.paragraphs[0].text = "Generated by LexAnalytica Institutional Intelligence"
-    
-    buffer = io.BytesIO()
-    doc.save(buffer)
     buffer.seek(0)
     return buffer

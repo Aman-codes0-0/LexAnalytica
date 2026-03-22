@@ -380,14 +380,6 @@ export default function App() {
                   {downloading === 'pdf' ? <RefreshCcw size={16} className="animate-spin" /> : <FileText size={16} />}
                   {downloading === 'pdf' ? 'Preparing...' : 'Download PDF'}
                 </button>
-                <button 
-                  onClick={() => handleDownload('docx')}
-                  disabled={!!downloading}
-                  className="px-4 py-2 bg-[#10b981]/10 text-[#34d399] border border-[#10b981]/20 rounded-md text-sm font-medium hover:bg-[#10b981]/20 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {downloading === 'docx' ? <RefreshCcw size={16} className="animate-spin" /> : <Layout size={16} />}
-                  {downloading === 'docx' ? 'Preparing...' : 'Download DOCX'}
-                </button>
               </div>
             </div>
 
