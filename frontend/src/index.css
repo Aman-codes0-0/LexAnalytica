@@ -576,6 +576,7 @@ aside p:hover {
 .items-center { align-items: center; }
 .justify-center { justify-content: center; }
 .justify-between { justify-content: space-between; }
+.flex-wrap { flex-wrap: wrap; }
 .gap-1 { gap: 4px; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
@@ -600,11 +601,13 @@ aside p:hover {
 .p-5 { padding: 20px; }
 .p-10 { padding: 40px; }
 .p-12 { padding: 48px; }
+.py-1 { padding-top: 4px; padding-bottom: 4px; }
 .py-3 { padding-top: 12px; padding-bottom: 12px; }
 .py-5 { padding-top: 20px; padding-bottom: 20px; }
 .py-8 { padding-top: 32px; padding-bottom: 32px; }
 .py-10 { padding-top: 40px; padding-bottom: 40px; }
 .py-20 { padding-top: 80px; padding-bottom: 80px; }
+.px-3 { padding-left: 12px; padding-right: 12px; }
 .px-5 { padding-left: 20px; padding-right: 20px; }
 .px-6 { padding-left: 24px; padding-right: 24px; }
 .px-8 { padding-left: 32px; padding-right: 32px; }
@@ -637,6 +640,22 @@ aside p:hover {
 .border-b { border-bottom: 1px solid var(--border-color); }
 .border-t { border-top: 1px solid var(--border-color); }
 .border-l-2 { border-left: 2px solid var(--accent-primary); }
+.rounded { border-radius: var(--radius-sm); }
+.border-white\/5 { border-color: rgba(255, 255, 255, 0.05); }
+
+/* Entity specific color utilities (matching App.jsx) */
+.bg-\[\#6366f1\]\/10 { background-color: rgba(99, 102, 241, 0.1); }
+.text-\[\#818cf8\] { color: #818cf8; }
+.bg-\[\#10b981\]\/10 { background-color: rgba(16, 185, 129, 0.1); }
+.text-\[\#34d399\] { color: #34d399; }
+.bg-\[\#f59e0b\]\/10 { background-color: rgba(245, 158, 11, 0.1); }
+.text-\[\#fbbf24\] { color: #fbbf24; }
+.bg-\[\#ef4444\]\/10 { background-color: rgba(239, 68, 68, 0.1); }
+.text-\[\#f87171\] { color: #f87171; }
+.bg-\[\#8b5cf6\]\/10 { background-color: rgba(139, 92, 246, 0.1); }
+.text-\[\#a78bfa\] { color: #a78bfa; }
+.bg-\[\#ec4899\]\/10 { background-color: rgba(236, 72, 153, 0.1); }
+.text-\[\#f472b6\] { color: #f472b6; }
 
 /* Custom Progress Components */
 .loading-indicator {

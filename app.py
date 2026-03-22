@@ -15,7 +15,7 @@ from nlp.extractor import extract_text
 from nlp.preprocessor import preprocess, split_sentences, get_language
 from nlp.entities import extract_entities
 from nlp.summarizer import summarize
-from nlp.generator import generate_pdf, generate_docx
+from nlp.generator import generate_pdf
 
 app = FastAPI(title="AI Legal Document Summarization System")
 
@@ -33,19 +33,6 @@ async def download_pdf(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
-@app.post("/api/download/docx")
-async def download_docx(data: dict):
-    """Generate and return a DOCX version of the analysis."""
-    try:
-        docx_buffer = generate_docx(data)
-        filename = data.get("filename", "analysis")
-        return StreamingResponse(
-            docx_buffer,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f"attachment; filename={filename}_analysis.docx"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DOCX generation failed: {str(e)}")
 
 # ... (rest of the file remains same)
 
