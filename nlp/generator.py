@@ -12,19 +12,34 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-# Font registration
-FONT_PATH = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
-FONT_NAME = "NotoSans"
+# ─── Font Registration (Unicode Support for Hindi) ──────────────────────────────
 
-try:
-    if os.path.exists(FONT_PATH):
-        pdfmetrics.registerFont(TTFont(FONT_NAME, FONT_PATH))
-    else:
-        print(f"[WARNING] Devanagari font not found at {FONT_PATH}. Falling back to standard fonts.")
-        FONT_NAME = "Helvetica"
-except Exception as e:
-    print(f"[ERROR] Font registration failed: {e}")
-    FONT_NAME = "Helvetica"
+def _register_unicode_fonts():
+    """
+    Search for and register Unicode fonts that support Devanagari script.
+    Checks common Linux paths for Noto Sans, Lohit, or FreeSerif.
+    """
+    possible_fonts = [
+        ("/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf", "NotoSans"),
+        ("/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Regular.ttf", "NotoSerif"),
+        ("/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf", "Lohit"),
+        ("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", "FreeSerif"),
+        # Fallbacks for other distributions
+        ("/usr/share/fonts/noto/NotoSansDevanagari-Regular.ttf", "NotoSans"),
+    ]
+    
+    for path, name in possible_fonts:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont(name, path))
+                print(f"[INFO] Registered Unicode font: {name} from {path}")
+                return name
+            except Exception as e:
+                print(f"[WARNING] Failed to register font {name}: {e}")
+    
+    return "Helvetica" # Absolute fallback
+
+FONT_NAME = _register_unicode_fonts()
 
 def generate_pdf(data: dict) -> io.BytesIO:
     """Generate a professional PDF report from analysis results."""
@@ -36,20 +51,25 @@ def generate_pdf(data: dict) -> io.BytesIO:
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
     
     styles = getSampleStyleSheet()
-    # Custom styles
+    # Adjust leading and spacing for Hindi (Devanagari matras need more height)
+    base_leading = 14 if lang == "en" else 18
+    base_fontSize = 10 if lang == "en" else 11
+
     title_style = ParagraphStyle(
         'TitleStyle',
         parent=styles['Heading1'],
-        fontName=active_font, # Use registered font
+        fontName=active_font,
         fontSize=22,
+        leading=28,
         spaceAfter=12,
         textColor=colors.HexColor("#6366f1")
     )
     section_style = ParagraphStyle(
         'SectionStyle',
         parent=styles['Heading2'],
-        fontName=active_font, # Use registered font
+        fontName=active_font,
         fontSize=14,
+        leading=18,
         spaceBefore=12,
         spaceAfter=6,
         textColor=colors.HexColor("#1e293b")
@@ -57,9 +77,9 @@ def generate_pdf(data: dict) -> io.BytesIO:
     body_style = ParagraphStyle(
         'BodyStyle',
         parent=styles['Normal'],
-        fontName=active_font, # Use registered font
-        fontSize=10,
-        leading=14
+        fontName=active_font,
+        fontSize=base_fontSize,
+        leading=base_leading
     )
     
     elements = []
