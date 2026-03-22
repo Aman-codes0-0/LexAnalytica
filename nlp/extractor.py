@@ -5,9 +5,6 @@ Supports PDF, DOCX, TXT, and Image (PNG, JPG, JPEG) file formats.
 
 import os
 from PyPDF2 import PdfReader
-from docx import Document
-
-
 def extract_text(file_path: str) -> str:
     """
     Extract raw text from a legal document.
@@ -25,14 +22,12 @@ def extract_text(file_path: str) -> str:
 
     if ext == ".pdf":
         return _extract_from_pdf(file_path)
-    elif ext == ".docx":
-        return _extract_from_docx(file_path)
     elif ext == ".txt":
         return _extract_from_txt(file_path)
     elif ext in (".png", ".jpg", ".jpeg"):
         return _extract_from_image(file_path)
     else:
-        raise ValueError(f"Unsupported file format: {ext}. Supported formats: PDF, DOCX, TXT, PNG, JPG, JPEG")
+        raise ValueError(f"Unsupported file format: {ext}. Supported formats: PDF, TXT, PNG, JPG, JPEG")
 
 
 def _extract_from_pdf(file_path: str) -> str:
@@ -44,13 +39,6 @@ def _extract_from_pdf(file_path: str) -> str:
         if text:
             pages_text.append(text.strip())
     return "\n\n".join(pages_text)
-
-
-def _extract_from_docx(file_path: str) -> str:
-    """Extract text from a DOCX file using python-docx."""
-    doc = Document(file_path)
-    paragraphs = [para.text.strip() for para in doc.paragraphs if para.text.strip()]
-    return "\n\n".join(paragraphs)
 
 
 def _extract_from_txt(file_path: str) -> str:

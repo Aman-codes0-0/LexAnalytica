@@ -4,6 +4,8 @@ Supports both extractive (TF-IDF sentence ranking) and abstractive (BART) summar
 """
 
 import math
+import torch
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from .preprocessor import split_sentences, get_word_frequencies
 
 
@@ -67,9 +69,6 @@ def _load_abstractive_model():
     
     if _abstractive_model is not None:
         return
-    
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-    import torch
     
     model_name = "nsi319/legal-led-base-16384"
     print(f"[INFO] Loading specialized legal summarization model: {model_name} ...")
