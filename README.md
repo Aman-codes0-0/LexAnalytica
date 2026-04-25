@@ -10,16 +10,16 @@ Recently upgraded with **Graph RAG** and **Neurosymbolic AI**, the system now co
 
 ## 🌟 Features
 
-| Feature | Description |
-|---|---|
-| 🧠 **Neural Summarization** | Specialized **Legal-LED-16384** model (16k context) for high-accuracy AI synthesis. |
-| 🏷️ **Legal-BERT NER** | Extracts Judges, Case Numbers, Sections of Law, Parties, Dates, and Organizations using Hugging Face pipelines. |
-| 🕸️ **Graph RAG** | Connects all extracted documents and entities into an in-memory Knowledge Graph (NetworkX) for relational queries. |
-| ⚖️ **Neurosymbolic Logic** | Forward-chaining reasoning engine applies strict legal logic to extracted facts to deduce outcomes without hallucination. |
-| 🌐 **Bi-lingual Support** | Native Hindi (Devanagari) & English document processing + cross-language translation. |
-| 🖼️ **OCR Support** | Scanned image files (PNG, JPG, JPEG) processed via PaddleOCR. |
-| 📄 **PDF Export** | Professional Unicode PDF reports with full Devanagari rendering. |
-| 🌙 **Dark UI** | Premium dark-themed React dashboard with real-time feedback and logic deduction visualization. |
+| Feature                     | Description                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 🧠 **Neural Summarization** | Specialized **Legal-LED-16384** model (16k context) for high-accuracy AI synthesis.                                       |
+| 🏷️ **Legal-BERT NER**       | Extracts Judges, Case Numbers, Sections of Law, Parties, Dates, and Organizations using Hugging Face pipelines.           |
+| 🕸️ **Graph RAG**            | Connects all extracted documents and entities into an in-memory Knowledge Graph (NetworkX) for relational queries.        |
+| ⚖️ **Neurosymbolic Logic**  | Forward-chaining reasoning engine applies strict legal logic to extracted facts to deduce outcomes without hallucination. |
+| 🌐 **Bi-lingual Support**   | Native Hindi (Devanagari) & English document processing + cross-language translation.                                     |
+| 🖼️ **OCR Support**          | Scanned image files (PNG, JPG, JPEG) processed via PaddleOCR.                                                             |
+| 📄 **PDF Export**           | Professional Unicode PDF reports with full Devanagari rendering.                                                          |
+| 🌙 **Dark UI**              | Premium dark-themed React dashboard with real-time feedback and logic deduction visualization.                            |
 
 ---
 
@@ -58,79 +58,45 @@ LexAnalytica/
 
 Make sure the following are installed on your system:
 
-| Requirement | Version | Download |
-|---|---|---|
-| Python | 3.9 or higher | [python.org](https://www.python.org/downloads/) |
-| Node.js | 16 or higher | [nodejs.org](https://nodejs.org/) |
-| npm | comes with Node.js | — |
-| Git | any | [git-scm.com](https://git-scm.com/) |
+| Requirement | Version            | Download                                        |
+| ----------- | ------------------ | ----------------------------------------------- |
+| Python      | 3.9 or higher      | [python.org](https://www.python.org/downloads/) |
+| Node.js     | 16 or higher       | [nodejs.org](https://nodejs.org/)               |
+| npm         | comes with Node.js | —                                               |
+| Git         | any                | [git-scm.com](https://git-scm.com/)             |
 
 ---
 
 ## 🚀 How to Run — Step by Step
 
-### 🐧 Linux / macOS
-
-**Step 1 — Clone the repository**
-```bash
-git clone https://github.com/your-username/LexAnalytica.git
-cd LexAnalytica
-```
-
-**Step 2 — Create and activate a Python virtual environment**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-> You will see `(venv)` appear at the start of your terminal prompt.
-
-**Step 3 — Install Python dependencies**
-```bash
-pip install -r requirements.txt
-```
-> ⚠️ The AI models (Transformers, PyTorch, PaddleOCR) are large. It may take **5–15 minutes** on the first run. The Hugging Face models will automatically download the first time you analyze a document.
-
-**Step 4 — Install frontend dependencies and build the React UI**
-```bash
-cd frontend
-npm install
-npm run build
-cd ..
-```
-
-**Step 5 — Run the application**
-```bash
-python3 app.py
-```
-
-**Step 6 — Open in browser**
-Go to: [http://localhost:8000](http://localhost:8000)
-
----
-
 ### 🪟 Windows
 
 **Step 1 — Clone the repository**
 Open **Command Prompt** or **PowerShell** and run:
+
 ```cmd
 git clone https://github.com/your-username/LexAnalytica.git
 cd LexAnalytica
 ```
 
 **Step 2 — Create and activate a Python virtual environment**
+
 ```cmd
 python -m venv venv
 venv\Scripts\activate
 ```
+
 > ⚠️ If you get a PowerShell execution policy error, run this first:
 > `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 **Step 3 — Install Python dependencies**
+
 ```cmd
 pip install -r requirements.txt
 ```
 
 **Step 4 — Install frontend dependencies and build the React UI**
+
 ```cmd
 cd frontend
 npm install
@@ -139,6 +105,7 @@ cd ..
 ```
 
 **Step 5 — Run the application**
+
 ```cmd
 python app.py
 ```
@@ -150,11 +117,11 @@ Go to: [http://localhost:8000](http://localhost:8000)
 
 ## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/summarize` | Upload a document for full analysis (Extraction, RAG, Reasoning) |
-| `GET`  | `/api/query_graph` | Query the NetworkX Knowledge Graph for related entities/docs |
-| `POST` | `/api/download/pdf`| Download analysis as PDF |
+| Method | Endpoint            | Description                                                      |
+| ------ | ------------------- | ---------------------------------------------------------------- |
+| `POST` | `/api/summarize`    | Upload a document for full analysis (Extraction, RAG, Reasoning) |
+| `GET`  | `/api/query_graph`  | Query the NetworkX Knowledge Graph for related entities/docs     |
+| `POST` | `/api/download/pdf` | Download analysis as PDF                                         |
 
 ---
 
@@ -176,10 +143,10 @@ Go to: [http://localhost:8000](http://localhost:8000)
 
 ## 🌐 Languages Supported
 
-| Language | Input | Output |
-|---|---|---|
-| English | ✅ | ✅ |
-| Hindi (Devanagari) | ✅ | ✅ |
+| Language           | Input | Output |
+| ------------------ | ----- | ------ |
+| English            | ✅    | ✅     |
+| Hindi (Devanagari) | ✅    | ✅     |
 
 ---
 
