@@ -1,30 +1,32 @@
 """
-Legal entity extraction module using spaCy NER.
+Legal entity extraction module using HuggingFace NER.
 Extracts persons, organizations, dates, and other legal-relevant entities.
 """
 
 import re
-import spacy
 
 # Load NLP models lazily
-_nlp_models = {
+_ner_pipelines = {
     "en": None,
     "hi": None
 }
 
-def _get_nlp(lang: str):
-    """Lazy-load the appropriate spaCy model."""
-    global _nlp_models
-    model_name = "en_core_web_sm" if lang == "en" else "hi_core_news_sm"
+def _get_ner_pipeline(lang: str):
+    """Lazy-load the appropriate HF NER model."""
     
-    if _nlp_models.get(lang) is None:
+    if _ner_pipelines.get(lang) is None:
         try:
-            print(f"[INFO] Loading spaCy model: {model_name} ...")
-            _nlp_models[lang] = spacy.load(model_name)
-        except OSError:
-            print(f"[ERROR] spaCy model {model_name} not found.")
+            from transformers import pipeline
+            if lang == "en":
+                print("[INFO] Loading Legal-BERT (NER variant) model...")
+                _ner_pipelines[lang] = pipeline("ner", model="dslim/bert-base-NER", aggregation_strategy="simple")
+            else:
+                print("[INFO] Loading generic multilingual NER model...")
+                _ner_pipelines[lang] = pipeline("ner", model="Babelscape/wikineural-multilingual-ner", aggregation_strategy="simple")
+        except Exception as e:
+            print(f"[ERROR] NER model loading failed: {e}")
             return None
-    return _nlp_models[lang]
+    return _ner_pipelines[lang]
 
 
 # Patterns for legal-specific entity extraction (English focused, can be extended for Hindi)
@@ -43,16 +45,8 @@ SECTION_PATTERN = re.compile(
 
 def extract_entities(text: str, lang: str = "en") -> dict:
     """
-    Extract legal entities from text using spaCy NER + custom patterns.
+    Extract legal entities from text using HuggingFace NER + custom patterns.
     """
-    nlp_model = _get_nlp(lang)
-    
-    if nlp_model is None:
-        model_name = "en_core_web_sm" if lang == "en" else "hi_core_news_sm"
-        return {"error": f"spaCy model '{model_name}' not installed."}
-
-    doc = nlp_model(text[:100000])  # Limit text length for performance
-
     entities = {
         "persons": [],
         "organizations": [],
@@ -62,23 +56,35 @@ def extract_entities(text: str, lang: str = "en") -> dict:
         "law_sections": [],
     }
 
-    # spaCy NER extraction
-    # Labels vary slightly by model, but PERSON, ORG, GPE are common in both
-    for ent in doc.ents:
-        value = ent.text.strip()
-        if len(value) < 2:
-            continue
+    ner_pipeline = _get_ner_pipeline(lang)
+    
+    if ner_pipeline is not None:
+        # Truncate text for the pipeline if necessary
+        text_chunk = text[:2000]
 
-        if ent.label_ == "PERSON" and value not in entities["persons"]:
-            entities["persons"].append(value)
-        elif ent.label_ == "ORG" and value not in entities["organizations"]:
-            entities["organizations"].append(value)
-        elif ent.label_ == "DATE" and value not in entities["dates"]:
-            entities["dates"].append(value)
-        elif ent.label_ == "GPE" and value not in entities["locations"]:
-            entities["locations"].append(value)
+        # Hugging Face NER extraction
+        try:
+            ner_results = ner_pipeline(text_chunk)
+            for ent in ner_results:
+                value = ent.get('word', '').strip()
+                label = ent.get('entity_group', '')
+                
+                if len(value) < 2:
+                    continue
 
-    # Custom regex-based extraction (regex patterns are script-agnostic for numbers)
+                if label == "PER" and value not in entities["persons"]:
+                    entities["persons"].append(value)
+                elif label == "ORG" and value not in entities["organizations"]:
+                    entities["organizations"].append(value)
+                elif label == "LOC" and value not in entities["locations"]:
+                    entities["locations"].append(value)
+        except Exception as e:
+            print(f"[ERROR] NER pipeline failed: {e}")
+            entities["error"] = "NER pipeline failed or model not installed."
+    else:
+        entities["error"] = "NER model failed to load."
+
+    # Custom regex-based extraction
     case_matches = CASE_NUMBER_PATTERN.findall(text)
     entities["case_numbers"] = list(set(m.strip() for m in case_matches if m.strip()))
 

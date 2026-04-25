@@ -388,7 +388,8 @@ export default function App() {
                 { icon: '📊', val: results.word_count, label: 'Words' },
                 { icon: '📑', val: results.sentence_count, label: 'Sentences' },
                 { icon: '⏳', val: results.text_length, label: 'Characters' },
-                { icon: '🛡️', val: totalEntities, label: 'Entities' }
+                { icon: '🛡️', val: totalEntities, label: 'Entities' },
+                { icon: '🕸️', val: results.graph_stats?.total_nodes || 0, label: 'Graph Nodes' }
               ].map(stat => (
                 <div key={stat.label} className="stat-card">
                   <span className="stat-card-icon">{stat.icon}</span>
@@ -468,6 +469,35 @@ export default function App() {
                    <p className="summary-text">
                     {results.summary.abstractive}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {results.reasoning_deductions && results.reasoning_deductions.length > 0 && (
+              <div className="result-panel">
+                <div className="panel-header" style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                  <h3 className="panel-title text-danger">
+                    <AlertTriangle size={20} />
+                    Neurosymbolic Deductions
+                  </h3>
+                  <span className="panel-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>Logic Engine</span>
+                </div>
+                <div className="p-5">
+                  <div className="flex flex-col gap-3">
+                    {results.reasoning_deductions.map((deduction, idx) => (
+                      <div key={idx} className="p-4 rounded-md border border-white/10 bg-black/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-bold font-mono text-secondary">{deduction.rule_id}</span>
+                          <span className={cn(
+                            "text-xs px-2 py-0.5 rounded font-bold",
+                            deduction.severity === 'HIGH' ? "bg-danger/20 text-danger" : 
+                            deduction.severity === 'MEDIUM' ? "bg-warning/20 text-warning" : "bg-info/20 text-info"
+                          )}>{deduction.severity}</span>
+                        </div>
+                        <p className="text-sm">{deduction.conclusion}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

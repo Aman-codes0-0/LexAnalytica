@@ -16,6 +16,8 @@ from nlp.preprocessor import preprocess, split_sentences, get_language
 from nlp.entities import extract_entities
 from nlp.summarizer import summarize
 from nlp.generator import generate_pdf
+from nlp.graph_engine import global_graph
+from nlp.reasoning import logic_engine
 
 app = FastAPI(title="AI Legal Document Summarization System")
 
@@ -128,11 +130,21 @@ async def api_summarize(
         # Step 4: Extract entities
         entities = extract_entities(raw_text, lang=doc_lang)
 
+        # Phase 2: Ingest into Graph Engine
+        try:
+            global_graph.add_document_entities(file.filename, entities)
+            print(f"[INFO] Added {file.filename} entities to Knowledge Graph.")
+        except Exception as e:
+            print(f"[ERROR] Failed to add to graph: {e}")
+
         # Step 5: Summarize
         if mode not in ("extractive", "abstractive", "both"):
             mode = "both"
 
         summary_result = summarize(raw_text, mode=mode, lang=doc_lang)
+
+        # Phase 3: Neurosymbolic Reasoning
+        deductions = logic_engine.evaluate(entities)
 
         # Build initial response
         response = {
@@ -143,7 +155,9 @@ async def api_summarize(
             "word_count": len(raw_text.split()),
             "sentence_count": len(sentences),
             "entities": entities,
-            "summary": summary_result
+            "summary": summary_result,
+            "reasoning_deductions": deductions,
+            "graph_stats": global_graph.get_graph_summary()
         }
 
         # Step 6: Translate if output_lang is different from doc_lang or if specifically requested
@@ -164,6 +178,19 @@ async def api_summarize(
         # Clean up uploaded file
         if os.path.exists(file_path):
             os.remove(file_path)
+
+@app.get("/api/query_graph")
+async def query_graph_endpoint(q: str):
+    """Query the Knowledge Graph."""
+    try:
+        results = global_graph.query_graph(q)
+        return {
+            "query": q,
+            "results": results,
+            "graph_stats": global_graph.get_graph_summary()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --------------------------------------------------------------------------
 # Static file serving (React build or fallback)
