@@ -5,6 +5,7 @@ FastAPI API Server
 
 import os
 import shutil
+import time
 from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +19,7 @@ from nlp.summarizer import summarize
 from nlp.generator import generate_pdf
 from nlp.graph_engine import global_graph
 from nlp.reasoning import logic_engine
+from nlp.metrics import bundle_metrics
 
 app = FastAPI(title="AI Legal Document Summarization System")
 
@@ -117,7 +119,9 @@ async def api_summarize(
             shutil.copyfileobj(file.file, buffer)
 
         # Step 1: Extract text
+        t0 = time.perf_counter()
         raw_text = extract_text(file_path)
+        t1 = time.perf_counter()
         if not raw_text or len(raw_text.strip()) < 2:
             raise HTTPException(status_code=400, detail="Could not extract sufficient text from the document.")
 
@@ -128,7 +132,12 @@ async def api_summarize(
         sentences = split_sentences(raw_text, lang=doc_lang)
 
         # Step 4: Extract entities
+        t2 = time.perf_counter()
         entities = extract_entities(raw_text, lang=doc_lang)
+        t3 = time.perf_counter()
+
+        # Extract and remove internal _raw_ner before graph/response
+        raw_ner_results = entities.pop("_raw_ner", [])
 
         # Phase 2: Ingest into Graph Engine
         try:
@@ -141,12 +150,35 @@ async def api_summarize(
         if mode not in ("extractive", "abstractive", "both"):
             mode = "both"
 
+        t4 = time.perf_counter()
         summary_result = summarize(raw_text, mode=mode, lang=doc_lang)
+        t5 = time.perf_counter()
 
         # Phase 3: Neurosymbolic Reasoning
+        t6 = time.perf_counter()
         deductions = logic_engine.evaluate(entities)
+        t7 = time.perf_counter()
 
-        # Build initial response
+        # Phase 4: Compute Evaluation Metrics
+        processing_times = {
+            "extraction_sec": round(t1 - t0, 3),
+            "ner_sec":        round(t3 - t2, 3),
+            "summarization_sec": round(t5 - t4, 3),
+            "reasoning_sec":  round(t7 - t6, 3),
+            "total_sec":      round(t7 - t0, 3),
+        }
+        metrics = bundle_metrics(
+            original_text=raw_text,
+            original_sentences=sentences,
+            summary=summary_result,
+            entities=entities,
+            raw_ner_results=raw_ner_results,
+            processing_times=processing_times,
+            graph=global_graph.graph,
+            lang=doc_lang
+        )
+
+        # Build response
         response = {
             "filename": file.filename,
             "language": "Hindi" if doc_lang == "hi" else "English",
@@ -157,7 +189,8 @@ async def api_summarize(
             "entities": entities,
             "summary": summary_result,
             "reasoning_deductions": deductions,
-            "graph_stats": global_graph.get_graph_summary()
+            "graph_stats": global_graph.get_graph_summary(),
+            "metrics": metrics,
         }
 
         # Step 6: Translate if output_lang is different from doc_lang or if specifically requested
@@ -195,15 +228,15 @@ async def query_graph_endpoint(q: str):
 # --------------------------------------------------------------------------
 # Static file serving (React build or fallback)
 # --------------------------------------------------------------------------
-FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
+FRONTEND_DIST = os.path.join(BASE_DIR, "..", "frontend", "dist")
 
 if os.path.exists(FRONTEND_DIST):
     # Mount the React build. This is defined LAST so it doesn't hijack API routes
     app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
 else:
     # Serve old static files if frontend/dist is missing
-    STATIC_DIR = os.path.join(BASE_DIR, "static")
-    TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+    STATIC_DIR = os.path.join(BASE_DIR, "..", "static")
+    TEMPLATES_DIR = os.path.join(BASE_DIR, "..", "templates")
 
     if os.path.exists(STATIC_DIR):
         app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

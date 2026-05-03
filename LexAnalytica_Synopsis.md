@@ -1,9 +1,10 @@
 # LexAnalytica: Project Synopsis & Methodology
 
 ## 1. Project Synopsis
-**LexAnalytica** is an advanced, institutional-grade AI platform designed specifically for the legal domain. Legal professionals spend countless hours manually reading, analyzing, and finding connections across massive volumes of case laws, contracts, and filings. LexAnalytica automates this process by providing instant document summarization, extraction of critical legal entities, and cross-document reasoning. 
 
-Recently upgraded with next-generation AI architectures—including **Graph RAG (Retrieval-Augmented Generation)**, **Legal-BERT**, and **Neurosymbolic AI**—the system doesn't just read documents; it understands the complex relationships between laws, people, and precedents, allowing it to deduce legal outcomes with high accuracy. Furthermore, it natively supports both English and Hindi (Devanagari), seamlessly breaking language barriers in the Indian legal context.
+**LexAnalytica** is an advanced, institutional-grade AI platform designed specifically for the legal domain. Legal professionals spend countless hours manually reading, analyzing, and finding connections across massive volumes of case laws, contracts, and filings. LexAnalytica automates this process by providing instant document summarization, extraction of critical legal entities, cross-document reasoning, and automatic quality evaluation of every analysis.
+
+Upgraded with next-generation AI architectures — including **Graph RAG (Retrieval-Augmented Generation)**, **Legal-BERT**, **Neurosymbolic AI**, and an **Automatic Metric Evaluation Engine** — the system doesn't just read documents; it understands the complex relationships between laws, people, and precedents, measures the quality of its own output, and deduces legal outcomes with high accuracy. It natively supports both English and Hindi (Devanagari), seamlessly breaking language barriers in the Indian legal context.
 
 ---
 
@@ -12,72 +13,121 @@ Recently upgraded with next-generation AI architectures—including **Graph RAG 
 ### Hardware Requirements
 - **CPU:** Multi-core processor (Intel i5/Ryzen 5 or higher recommended).
 - **RAM:** Minimum 8 GB (16 GB strongly recommended due to large Transformer models in memory).
-- **Storage:** At least 5 GB of free space to cache large Hugging Face neural network models (Legal-LED, Legal-BERT) and PaddleOCR models.
+- **Storage:** At least 5 GB of free space to cache Hugging Face models (Legal-LED, Legal-BERT) and PaddleOCR models.
 
 ### Software Requirements
-- **OS:** Windows 10/11, macOS, or Linux.
+- **OS:** Windows 10/11.
 - **Backend:** Python 3.9+
 - **Frontend:** Node.js 16+ and npm
-- **Core Dependencies (Python):** `fastapi`, `uvicorn`, `transformers`, `torch`, `networkx`, `paddleocr`, `langdetect`, `nltk`, `PyPDF2`, `reportlab`.
+- **Core Dependencies (Python):** `fastapi`, `uvicorn`, `transformers`, `torch`, `networkx`, `paddleocr`, `langdetect`, `nltk`, `PyPDF2`, `reportlab`, `textstat`.
 
 ---
 
-## 3. Methodology & AI Model Architecture
+## 3. Methodology & AI Pipeline Architecture
+
 LexAnalytica operates on a sophisticated multi-layered pipeline. Here is exactly how the underlying models work together:
 
-### A. The Extraction Layer (PaddleOCR & PyPDF2)
-When a user uploads a document, the system first needs to extract raw text. Digital PDFs and text files are processed instantly via `PyPDF2`. If the user uploads a scanned image (PNG/JPG), the system utilizes **PaddleOCR**—a highly accurate Optical Character Recognition engine powered by deep learning—to visually scan and transcribe the text, supporting both English and Hindi scripts.
+### A. The Extraction Layer (`backend/nlp/extractor.py`)
+When a user uploads a document, the system first extracts raw text based on the file type:
+- **PDF** → `PyPDF2` reads the digital text stream directly, page by page.
+- **TXT** → Read directly with UTF-8 encoding.
+- **PNG / JPG / JPEG** → **PaddleOCR**, a deep learning-powered OCR engine, visually scans and transcribes the text — supporting both English and Hindi scripts.
 
-### B. The Perception Layer (Legal-BERT)
-To understand the legal markers in the text, the system uses a fine-tuned Hugging Face Transformer model: **Legal-BERT**. 
-* **How it works:** Unlike generic models, Legal-BERT was trained on millions of legal documents. Using a Token Classification pipeline (NER), it scans the text and accurately tags entities such as `Judges`, `Case Numbers`, `Locations`, `Organizations`, and `Persons`. It intelligently distinguishes between a regular person and a legal plaintiff based on contextual embeddings.
+### B. The Preprocessing Layer (`backend/nlp/preprocessor.py`)
+Raw text is cleaned and prepared for AI models:
+- **Language Detection**: `langdetect` identifies whether the document is in English or Hindi.
+- **Text Cleaning**: Language-specific regex strips noise — preserving Devanagari Unicode (`\u0900–\u097F`) for Hindi, alphanumeric for English.
+- **Sentence Splitting**: NLTK `sent_tokenize` for English; Purna Viram (`।`) splitting for Hindi.
+- **Stopword Removal**: NLTK stopwords used for word frequency computation in extractive summarization.
 
-### C. The Knowledge Layer (Graph RAG)
-Traditional AI systems forget documents as soon as they process them. LexAnalytica uses **Graph RAG**.
-* **How it works:** Extracted entities are piped into an in-memory graph database built with `NetworkX`. The document becomes a central node, and all entities become connected branches. If multiple documents mention the same "Section 420" or "Company X," the graph connects them. This allows the system to perform relational queries, retrieving past precedents connected to current entities.
+### C. The Perception Layer — Legal-BERT NER (`backend/nlp/entities.py`)
+To identify legal markers in the text, the system uses fine-tuned Hugging Face NER models:
+- **English**: `dslim/bert-base-NER` — a BERT model trained on CoNLL-2003 for high-accuracy entity detection.
+- **Hindi**: `Babelscape/wikineural-multilingual-ner` — a multilingual NER model.
 
-### D. The Reasoning Layer (Neurosymbolic AI)
-Neural networks (like BERT) are great at reading, but they cannot perform strict logical reasoning (they hallucinate). LexAnalytica solves this by passing the extracted facts from Legal-BERT into a **Symbolic Logic Engine**.
-* **How it works:** The engine contains hard-coded, strict legal rules (e.g., `IF "Fraud" AND "Persons > 0" THEN "Flag for High Severity"`). By combining Neural extraction with Symbolic logic, the system deduces bulletproof legal conclusions without the risk of AI hallucination.
+The pipeline extracts `Persons`, `Organizations`, and `Locations`. Custom **regex fallbacks** extract structured legal entities — `Case Numbers` and `Law Sections` — from the full text with perfect reliability. Raw confidence scores from the HuggingFace pipeline are stored internally and passed to the Metric Evaluation Engine.
 
-### E. The Synthesis Layer (Legal-LED-16384)
-For summarization, the system uses the **Longformer-Encoder-Decoder (LED)** model fine-tuned for the legal domain.
-* **How it works:** Standard AI models (like basic BERT) can only read about 1.5 pages of text at a time (512 tokens). Legal-LED uses a "sparse attention mechanism" allowing it to ingest up to **16,384 tokens** (roughly 40 pages) at once, generating a cohesive, human-like abstractive summary of massive court judgments.
+### D. The Synthesis Layer — Dual Summarization (`backend/nlp/summarizer.py`)
+Two complementary summarization techniques run in parallel:
+
+1. **Extractive Summary (TF-IDF)**: A mathematical approach — sentences are scored by normalized word frequency and ranked. The top-N sentences are returned in their original order. Works for both English and Hindi. No model download needed.
+
+2. **Abstractive Summary (Legal-LED-16384)**: Uses the `nsi319/legal-led-base-16384` Longformer-Encoder-Decoder model fine-tuned on legal corpora. Standard models cap at 512 tokens (~400 words); Legal-LED handles **16,384 tokens (~12,000 words)** using sparse attention, enabling full-document understanding without truncation. It generates a brand-new, human-like summary in its own words. For Hindi documents, the system falls back to extractive summarization (the LED model is English-only).
+
+### E. The Knowledge Layer — Graph RAG (`backend/nlp/graph_engine.py`)
+Traditional AI systems have no memory across documents. LexAnalytica builds a **persistent in-memory Knowledge Graph** using `NetworkX DiGraph`:
+- Each uploaded document becomes a central node.
+- Every extracted entity (persons, orgs, case numbers, law sections) becomes a connected node.
+- Relationships are typed: `MENTIONS_PERSON`, `CITES_CASE`, `REFERENCES_LAW`, etc.
+- If multiple documents reference the same "Section 420" or "Company X", the graph connects them — enabling cross-document precedent retrieval via the `/api/query_graph` endpoint.
+
+### F. The Reasoning Layer — Neurosymbolic AI (`backend/nlp/reasoning.py`)
+Neural networks are excellent at reading but prone to hallucination. LexAnalytica mitigates this by combining neural extraction with **Symbolic Logic**:
+- The `NeuroSymbolicEngine` contains strict forward-chaining rules defined as Python `lambda` conditions.
+- Rules evaluate the extracted entity dictionary and fire deterministic conclusions:
+  - `RULE_1_FRAUD`: Fraud-related sections + persons → HIGH severity flag
+  - `RULE_2_NDA_BREACH`: Confidentiality context + persons → MEDIUM severity flag
+  - `RULE_3_CORPORATE_DISPUTE`: Multiple organizations + law sections → INFO flag
+- No hallucination possible — conclusions are only fired when conditions are strictly met.
+
+### G. The Evaluation Layer — Metric Engine (`backend/nlp/metrics.py`)
+A new addition: after every analysis, the system automatically evaluates the quality of its own output across 5 categories — **no reference summary required**:
+
+| Category | Metrics |
+|----------|---------|
+| **Summarization** | Compression Ratio, Sentence Coverage % |
+| **Document Quality** | Flesch-Kincaid Readability Score, Grade Level, Lexical Diversity |
+| **NER Confidence** | Avg / Min / Max confidence scores, Entity Category Coverage |
+| **Performance** | Per-step processing time (Extraction, NER, Summarization, Reasoning, Total) |
+| **Graph RAG** | Graph Density, Connected Components, Node/Edge counts |
+
+Results are shown in a color-coded **Evaluation Metrics** panel in the dashboard.
 
 ---
 
 ## 4. Codebase Explanation (File-by-File)
 
-LexAnalytica is built with a decoupled architecture. Below is a detailed explanation of every crucial file in the repository.
+LexAnalytica follows a clean **decoupled architecture** with a dedicated `backend/` and `frontend/` folder.
 
-### Backend Orchestration
-* **`app.py`**: The central brain of the application. It runs the FastAPI web server. It exposes endpoints like `/api/summarize` and `/api/query_graph`. When a file is uploaded, this script sequentially routes the data through the extraction, preprocessing, NER, summarization, graph-building, and reasoning modules. Finally, it serves the React frontend.
-* **`requirements.txt`**: A critical file containing all the Python libraries required for the project. Here is a breakdown of what each dependency does:
-  * `fastapi` & `uvicorn`: Creates the high-performance asynchronous web server and API endpoints.
-  * `python-multipart`: Allows FastAPI to handle raw file uploads (PDFs, Images) from the frontend.
-  * `jinja2`: Handles template rendering if the React frontend is unavailable.
-  * `transformers` & `torch`: The core AI libraries. They load and run the massive Hugging Face neural networks (`Legal-BERT` for entities and `Legal-LED` for summarization).
-  * `PyPDF2`: A utility to extract raw text streams from digital PDF documents.
-  * `nltk`: The Natural Language Toolkit. Used to split text into sentences and strip out useless "stop words" before AI processing.
-  * `langdetect`: Automatically identifies if the uploaded document is written in English or Hindi.
-  * `deep-translator`: Connects to Google Translate to seamlessly convert summaries and entities between English and Hindi.
-  * `paddlepaddle` & `paddleocr`: The deep learning framework and Optical Character Recognition models used to extract text from scanned images.
-  * `reportlab`: A powerful graphics library used to draw and generate the final downloadable PDF reports.
-  * `numpy`: Handles the complex mathematical arrays required by the AI models.
-  * `networkx`: Creates the in-memory directed Knowledge Graph, linking extracted entities together for the Graph RAG engine.
+### Backend (`backend/` directory)
 
-### The NLP Intelligence Layer (`nlp/` directory)
-* **`nlp/extractor.py`**: Handles file parsing. It determines the file extension. If it's a digital PDF or TXT, it reads it directly. If it's an image, it initializes the `PaddleOCR` neural network to extract the text visually.
-* **`nlp/preprocessor.py`**: Prepares the raw text for the AI models. It uses `langdetect` to figure out if the document is in English or Hindi. It then uses `NLTK` to strip out "stopwords" (useless filler words), remove noisy special characters, and split the text into an array of clean sentences.
-* **`nlp/entities.py`**: The Named Entity Recognition (NER) module. It dynamically loads a Hugging Face `transformers` pipeline. It processes the text to find Persons, Organizations, and Locations. It also includes robust Regex fallbacks to extract structured `case_numbers` and `law_sections` perfectly every time.
-* **`nlp/graph_engine.py`**: The memory module. It uses the `networkx` library to build a directed graph (`nx.DiGraph`). It takes the entities found by `entities.py` and creates "Nodes" and "Edges", linking documents to the entities they mention. It powers the `/api/query_graph` endpoint.
-* **`nlp/reasoning.py`**: The logic engine. It defines a `NeuroSymbolicEngine` class containing strict conditional rules (`lambda` functions). It evaluates the dictionary of entities and returns definitive legal deductions and severity flags.
-* **`nlp/summarizer.py`**: Contains two distinct summarization techniques.
-  1. `extractive_summary`: Uses mathematics (TF-IDF) to rank the most important existing sentences in the document and returns them.
-  2. `abstractive_summary`: Uses the massive `Legal-LED-16384` PyTorch model to read the entire document and write a brand-new, cohesive summary in its own words.
-* **`nlp/generator.py`**: Uses the `ReportLab` library to take the final structured output (Summaries + Entities + Deductions) and format them into a downloadable PDF report. It includes special font-handling to correctly render Devanagari (Hindi) text.
+#### `backend/app.py`
+The central API gateway. Runs the FastAPI web server on port 8000. It:
+- Exposes `/api/summarize`, `/api/query_graph`, and `/api/download/pdf` endpoints.
+- Wraps every pipeline step with `time.perf_counter()` for precise timing.
+- Orchestrates the full pipeline: extraction → NER → summarization → graph → reasoning → metrics.
+- Strips the internal `_raw_ner` key before returning the API response.
+- Serves the React build from `../frontend/dist/` as static files.
+
+#### `backend/requirements.txt`
+All Python dependencies:
+- `fastapi` & `uvicorn`: High-performance async web server.
+- `python-multipart`: File upload handling.
+- `transformers` & `torch`: Loads and runs Legal-BERT and Legal-LED neural networks.
+- `PyPDF2`: Extracts text from digital PDF files.
+- `nltk`: Sentence tokenization and stopword removal.
+- `langdetect`: Automatic language detection (English vs Hindi).
+- `deep-translator`: Google Translate integration for bilingual output.
+- `paddlepaddle` & `paddleocr`: Deep learning OCR for scanned images.
+- `reportlab`: Generates downloadable Unicode PDF reports with Devanagari support.
+- `numpy`: Mathematical array operations for AI models.
+- `networkx`: In-memory directed Knowledge Graph for Graph RAG.
+- `textstat`: Flesch-Kincaid readability and grade level computation.
+
+### The NLP Intelligence Layer (`backend/nlp/`)
+
+- **`extractor.py`**: Routes files by extension to the correct reader — PyPDF2 for PDFs, UTF-8 for TXT, PaddleOCR for images.
+- **`preprocessor.py`**: Language detection, Unicode-aware text cleaning, sentence splitting, and word frequency computation for extractive summarization.
+- **`entities.py`**: HuggingFace NER pipeline (lazy-loaded) + regex fallbacks for case numbers and law sections. Stores raw NER confidence scores in `_raw_ner` for the metrics engine.
+- **`summarizer.py`**: TF-IDF extractive summarization + Legal-LED-16384 abstractive summarization with global attention mask and beam search decoding.
+- **`graph_engine.py`**: Singleton `GraphEngine` class. Builds a `nx.DiGraph` from entities, supports typed relationship edges, and provides `query_graph()` for keyword-based entity-document retrieval.
+- **`reasoning.py`**: Singleton `NeuroSymbolicEngine` with 3 forward-chaining rules. Evaluates entity facts and returns severity-tagged legal deductions.
+- **`generator.py`**: ReportLab PDF builder. Auto-registers Devanagari Unicode fonts (Noto, Lohit, FreeSerif) for Hindi output, falls back to Helvetica for English-only.
+- **`metrics.py`**: Master metric evaluation module. Computes compression ratio, sentence coverage, Flesch-Kincaid, lexical diversity, NER confidence stats, entity coverage, processing time dict, and graph density stats. All metrics are self-contained — no external reference needed.
 
 ### The Frontend Dashboard (`frontend/` directory)
-* **`frontend/src/App.jsx`**: The main React component. It provides the premium, dark-themed User Interface. It handles the drag-and-drop file upload, validates file sizes, and provides real-time loading feedback while the heavy Python AI models run in the background. Once the API returns the JSON response, this file dynamically renders the entity "pills", the text summaries, the Graph Node counts, and the color-coded Neurosymbolic deductions.
-* **`frontend/index.css` & `frontend/src/App.css`**: Contains custom CSS variables and styling classes to create a beautiful, modern aesthetic (often referred to as glassmorphism and neon-dark mode) using standard CSS paired with `clsx` for dynamic class merging.
-* **`frontend/package.json` & `vite.config.js`**: Configuration files for Vite and Node.js to quickly bundle the React application into static files that `app.py` can serve.
+
+- **`frontend/src/App.jsx`**: Single-page React application. Manages the full UI lifecycle — upload form → loading indicator with step progress → results dashboard. Renders entity pills, dual summaries, neurosymbolic deduction cards, and the new color-coded **Evaluation Metrics** panel (`MetricsPanel` component). PDF download is handled via a Blob fetch from `/api/download/pdf`.
+- **`frontend/src/index.css`**: Global dark-theme CSS with glassmorphism variables, custom component classes, and animation utilities.
+- **`frontend/src/App.css`**: Component-level CSS overrides.
+- **`frontend/package.json`** & **`vite.config.js`**: Vite 5 + React 18 configuration. The built `dist/` folder is served by FastAPI as static files.

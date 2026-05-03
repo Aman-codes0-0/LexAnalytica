@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
+  BarChart2,
+  Zap,
   FileText, 
   Upload, 
   Trash2, 
@@ -23,6 +25,154 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+// ─── MetricsPanel Component ────────────────────────────────────────────────
+function MetricRow({ label, value, unit = '', color = 'text-[#818cf8]', hint = '' }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+      <span className="text-xs text-slate-400">{label}</span>
+      <span className={cn('text-xs font-bold font-mono', color)} title={hint}>
+        {value ?? '—'}{unit}
+      </span>
+    </div>
+  );
+}
+
+function MetricGroup({ title, children }) {
+  return (
+    <div className="p-4 rounded-lg bg-black/20 border border-white/5">
+      <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function MetricsPanel({ metrics }) {
+  if (!metrics) return null;
+
+  const { summarization, document_quality, ner_confidence, entity_coverage, processing_time_sec, graph } = metrics;
+
+  // Color helpers
+  const compressionColor = (v) => v < 20 ? 'text-emerald-400' : v < 40 ? 'text-amber-400' : 'text-red-400';
+  const fleschColor = (v) => v >= 60 ? 'text-emerald-400' : v >= 40 ? 'text-amber-400' : 'text-red-400';
+  const diversityColor = (v) => v >= 0.5 ? 'text-emerald-400' : v >= 0.3 ? 'text-amber-400' : 'text-red-400';
+  const confColor = (v) => v >= 85 ? 'text-emerald-400' : v >= 65 ? 'text-amber-400' : 'text-red-400';
+  const coverageColor = (v) => v >= 66 ? 'text-emerald-400' : v >= 33 ? 'text-amber-400' : 'text-red-400';
+
+  return (
+    <div className="result-panel">
+      <div className="panel-header">
+        <h3 className="panel-title">
+          <BarChart2 size={20} />
+          Evaluation Metrics
+        </h3>
+        <span className="panel-badge" style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399' }}>Auto-Computed</span>
+      </div>
+      <div className="p-5">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+
+          {/* Summarization */}
+          <MetricGroup title="📝 Summarization">
+            <MetricRow
+              label="Compression Ratio"
+              value={summarization?.compression_ratio_pct}
+              unit="%"
+              color={compressionColor(summarization?.compression_ratio_pct)}
+              hint="How much of the original text the summary covers (lower = more compressed)"
+            />
+            {summarization?.sentence_coverage_pct != null && (
+              <MetricRow
+                label="Sentence Coverage"
+                value={summarization.sentence_coverage_pct}
+                unit="%"
+                color={coverageColor(summarization.sentence_coverage_pct)}
+                hint="% of original sentences referenced in the summary"
+              />
+            )}
+          </MetricGroup>
+
+          {/* Document Quality */}
+          <MetricGroup title="📖 Document Quality">
+            {document_quality?.flesch_kincaid && (
+              <>
+                <MetricRow
+                  label="Readability Score"
+                  value={document_quality.flesch_kincaid.score}
+                  color={fleschColor(document_quality.flesch_kincaid.score)}
+                  hint="Flesch Reading Ease — higher = easier to read"
+                />
+                <MetricRow
+                  label="Difficulty"
+                  value={document_quality.flesch_kincaid.label}
+                  color="text-slate-300"
+                />
+                <MetricRow
+                  label="Grade Level"
+                  value={document_quality.flesch_kincaid.grade}
+                  color="text-slate-300"
+                />
+              </>
+            )}
+            <MetricRow
+              label="Lexical Diversity"
+              value={document_quality?.lexical_diversity}
+              color={diversityColor(document_quality?.lexical_diversity)}
+              hint="Unique words / Total words (Type-Token Ratio)"
+            />
+          </MetricGroup>
+
+          {/* NER Confidence */}
+          <MetricGroup title="🎯 NER Confidence">
+            <MetricRow
+              label="Avg Confidence"
+              value={ner_confidence?.avg}
+              unit="%"
+              color={confColor(ner_confidence?.avg)}
+              hint="Average prediction confidence from the NER model"
+            />
+            <MetricRow label="Min Confidence" value={ner_confidence?.min} unit="%" color="text-slate-300" />
+            <MetricRow label="Max Confidence" value={ner_confidence?.max} unit="%" color="text-slate-300" />
+            <MetricRow
+              label="Entity Coverage"
+              value={`${entity_coverage?.filled_categories} / ${entity_coverage?.total_categories} categories`}
+              color={coverageColor(entity_coverage?.coverage_pct)}
+              hint="How many of the 6 entity types were found"
+            />
+          </MetricGroup>
+
+          {/* Processing Time */}
+          <MetricGroup title="⚡ Processing Time">
+            <MetricRow label="Text Extraction" value={processing_time_sec?.extraction_sec} unit="s" color="text-slate-300" />
+            <MetricRow label="NER Extraction" value={processing_time_sec?.ner_sec} unit="s" color="text-slate-300" />
+            <MetricRow label="Summarization" value={processing_time_sec?.summarization_sec} unit="s" color="text-slate-300" />
+            <MetricRow label="Reasoning" value={processing_time_sec?.reasoning_sec} unit="s" color="text-slate-300" />
+            <MetricRow
+              label="Total"
+              value={processing_time_sec?.total_sec}
+              unit="s"
+              color="text-[#818cf8]"
+            />
+          </MetricGroup>
+
+          {/* Graph RAG */}
+          <MetricGroup title="🕸️ Knowledge Graph">
+            <MetricRow
+              label="Graph Density"
+              value={graph?.density}
+              color={graph?.density > 0.3 ? 'text-emerald-400' : 'text-amber-400'}
+              hint="Edge density of the knowledge graph (higher = more interconnected)"
+            />
+            <MetricRow label="Total Nodes" value={graph?.total_nodes} color="text-slate-300" />
+            <MetricRow label="Total Edges" value={graph?.total_edges} color="text-slate-300" />
+            <MetricRow label="Components" value={graph?.connected_components} color="text-slate-300" hint="Number of disconnected subgraphs" />
+          </MetricGroup>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 export default function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [mode, setMode] = useState('both');
@@ -32,6 +182,25 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [originalTextCollapsed, setOriginalTextCollapsed] = useState(true);
+
+  // ── Memory leak guards ────────────────────────────────────────────────
+  // Tracks whether the component is still mounted before calling setState
+  const isMountedRef = useRef(true);
+  // Holds the AbortController for the active fetch so it can be cancelled on unmount
+  const abortControllerRef = useRef(null);
+  // Holds the stepInterval ID so it can be cleared on unmount
+  const stepIntervalRef = useRef(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      // On unmount: mark as unmounted, cancel any running fetch, clear interval
+      isMountedRef.current = false;
+      abortControllerRef.current?.abort();
+      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+    };
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -68,6 +237,11 @@ export default function App() {
     e.preventDefault();
     if (!selectedFile) return;
 
+    // Cancel any previous in-flight request
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setLoadingStep(0);
     setResults(null);
@@ -78,29 +252,38 @@ export default function App() {
     formData.append('mode', mode);
     formData.append('output_lang', outputLang);
 
-    const stepInterval = setInterval(() => {
-      setLoadingStep(prev => (prev < 2 ? prev + 1 : prev));
+    // Store interval ref so it can be cleared on unmount
+    stepIntervalRef.current = setInterval(() => {
+      if (isMountedRef.current)
+        setLoadingStep(prev => (prev < 2 ? prev + 1 : prev));
     }, 2000);
 
     try {
       const response = await fetch('/api/summarize', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,   // ← allows fetch to be aborted on unmount
       });
 
       const data = await response.json();
-      clearInterval(stepInterval);
+      clearInterval(stepIntervalRef.current);
 
       if (!response.ok) {
         throw new Error(data.detail || 'Server error occurred.');
       }
 
-      setResults(data);
-      setLoading(false);
+      if (isMountedRef.current) {
+        setResults(data);
+        setLoading(false);
+      }
     } catch (err) {
-      clearInterval(stepInterval);
-      setError(err.message);
-      setLoading(false);
+      clearInterval(stepIntervalRef.current);
+      // Ignore AbortError — it means the component unmounted or user cancelled
+      if (err.name === 'AbortError') return;
+      if (isMountedRef.current) {
+        setError(err.message);
+        setLoading(false);
+      }
     }
   };
 
@@ -501,6 +684,9 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* ── Evaluation Metrics Panel ── */}
+            <MetricsPanel metrics={results.metrics} />
 
             <div className="result-panel">
                 <div 

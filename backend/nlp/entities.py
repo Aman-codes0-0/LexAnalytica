@@ -54,6 +54,7 @@ def extract_entities(text: str, lang: str = "en") -> dict:
         "locations": [],
         "case_numbers": [],
         "law_sections": [],
+        "_raw_ner": [],   # Internal: raw NER results with confidence scores for metrics
     }
 
     ner_pipeline = _get_ner_pipeline(lang)
@@ -65,6 +66,9 @@ def extract_entities(text: str, lang: str = "en") -> dict:
         # Hugging Face NER extraction
         try:
             ner_results = ner_pipeline(text_chunk)
+            # Store raw results for confidence metric computation
+            entities["_raw_ner"] = ner_results
+
             for ent in ner_results:
                 value = ent.get('word', '').strip()
                 label = ent.get('entity_group', '')
@@ -91,8 +95,9 @@ def extract_entities(text: str, lang: str = "en") -> dict:
     section_matches = SECTION_PATTERN.findall(text)
     entities["law_sections"] = list(set(m.strip() for m in section_matches if m.strip()))
 
-    # Limit results for cleaner output
+    # Limit results for cleaner output (skip internal _raw_ner key)
     for key in entities:
-        entities[key] = entities[key][:15]
+        if key != "_raw_ner":
+            entities[key] = entities[key][:15]
 
     return entities
