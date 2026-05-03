@@ -6,8 +6,12 @@ FastAPI API Server
 import os
 import shutil
 import time
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
+
+# Load environment variables from .env file
+load_dotenv()
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,10 +44,12 @@ async def download_pdf(data: dict):
 
 # ... (rest of the file remains same)
 
-# Enable CORS for frontend development
+# Enable CORS using environment variables
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the actual origin
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -251,8 +257,12 @@ else:
 
 if __name__ == "__main__":
     import uvicorn
+    
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8000))
+
     print("=" * 60)
     print("  AI Legal Document Summarization System (FastAPI)")
-    print("  Open: http://localhost:8000")
+    print(f"  Open: http://localhost:{port}")
     print("=" * 60)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=host, port=port)
