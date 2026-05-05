@@ -1,0 +1,10 @@
+Instructions to run the app:
+STEP 0: Open a new terminal: Ctrl + Shift + `
+STEP 1: Go to Backend Directory: cd backend
+STEP 2: Create Virtual Environment: python -m venv env
+STEP 3: Install Requirement: pip install -r requirements.txt
+STEP 4: Run App: python app.py
+STEP 5: Open a new terminal: Ctrl + Shift + `
+STEP 6: Go to backend Directory: cd frontend
+STEP 7: Install and Run the frontend: npm i && npm run dev
+STEP 8: Open a browser and navigate to localhost:5173 to use the app
